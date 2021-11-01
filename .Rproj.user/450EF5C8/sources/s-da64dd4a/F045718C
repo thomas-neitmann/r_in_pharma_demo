@@ -1,0 +1,32 @@
+{
+    "id": "F045718C",
+    "path": null,
+    "project_path": null,
+    "type": "r_dataframe",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1635765323025.0,
+    "source_on_save": false,
+    "relative_order": 5,
+    "properties": {
+        "expression": "adeg",
+        "caption": "adeg",
+        "totalObservations": 400,
+        "displayedObservations": 400,
+        "variables": 30,
+        "cacheKey": "153D5320",
+        "object": "adeg",
+        "environment": "",
+        "contentUrl": "grid_resource/gridviewer.html?env=&obj=adeg&cache_key=153D5320&max_cols=50",
+        "preview": 0
+    },
+    "folds": "",
+    "lastKnownWriteTime": 2318270133864854132,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1635765323025,
+    "read_only": false,
+    "read_only_alternatives": []
+}

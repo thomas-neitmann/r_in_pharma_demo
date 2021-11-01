@@ -1,0 +1,87 @@
+### Make a structure for VS
+
+TESTCDS <- tribble(
+  ~EGTESTCD, ~EGTEST,       ~EGORRESU,
+  "QT",     "QT Duration",  "msec",
+  "HR",     "Heart Rate",   "beats/min",
+  "RR",     "RR Duration",  "msec"
+)
+
+visits <- c("BASELINE", paste("VISIT", seq(1, 4)))
+vlbfl <- c("Y", rep("", 4))
+
+Vital_vars <- dplyr::bind_rows(
+  Map(function(x, y){TESTCDS$VISIT <- x; TESTCDS$EGBLFL <- y; TESTCDS},
+      visits, vlbfl)
+)
+
+vital_join <- dplyr::bind_rows(
+  lapply(DM$USUBJID, function(x){Vital_vars$USUBJID = x; Vital_vars})
+)
+
+join_visit <- function(n, .df, .db){
+  X<- merge(.db[["DM"]], vital_join, by = "USUBJID", all = TRUE)
+  subset(X, select = - DOMAIN)
+}
+
+# EG
+
+vs_join_recipe <- tribble(
+  ~foreign_tbl, ~foreign_key, ~dependencies, ~func, ~func_args,
+  "DM", "USUBJID", no_deps, join_visit, NULL
+)
+
+### Functions for making VS
+
+VSval <- function(.df, n){
+  inner_calc <- function(tstcd){
+    if(tstcd == "QT") {
+      return(round(runif(1, 350, 450), 1))
+    }
+    if(tstcd == "HR") {
+      return(round(runif(1, 60, 100), 1))
+    }
+    if(tstcd == "RR") {
+      return(round(runif(1, 600, 1200), 1))
+    }
+  }
+  sapply(.df$EGTESTCD, inner_calc)
+}
+
+visitn_fn <- function(.df, n){
+  as.numeric(ifelse(grepl("\\d", .df$VISIT),
+                    regmatches(.df$VISIT,regexpr("\\d",.df$VISIT)),
+                    1))
+}
+
+date_gen <- function(.df, n){
+  as.Date(.df$RFSTDTC) + lubridate::days((.df$VISITNUM-1) * 14)
+}
+
+
+
+VS_recipe <- tribble(
+  ~variables,      ~dependencies,            ~func,               ~func_args,
+  "DOMAIN",        NULL,                     rep_n,               list(val = "EG"),
+  "EGSEQ",         "USUBJID",                seq_fun,             NULL,
+  "EGORRES",       "EGTESTCD",               VSval,               NULL,
+  "VISITNUM",      "VISIT",                  visitn_fn,           NULL,
+  "EGDTC",         c("RFSTDTC","VISITNUM"),  date_gen,            NULL
+
+)
+
+
+
+
+
+EG <- gen_reljoin_table(vs_join_recipe, VS_recipe, db = list(DM = DM),
+                        keep = c("STUDYID", "SITEID", "USUBJID", "VISIT",
+                                 "EGTESTCD", "EGTEST", "EGORRESU", "EGBLFL")) %>%
+  mutate(
+    EGORRES = as.character(EGORRES),
+    EGSTRESC = EGORRES,
+    EGSTRESN = as.numeric(EGORRES)
+  ) %>%
+  mutate_at(vars(ends_with("DTC")), function(x) gsub(" ", "T", as.character(x)))
+
+saveRDS(EG, file = "data/sdtm/eg.rds")
